@@ -4,27 +4,45 @@ import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid
 import { DashboardWidget, SisenseContextProvider } from '@sisense/sdk-ui';
 
 import LTDExpensedWidget from './components/LTDExpensedWidget';
-// ADDED: Import the new EnrollmentPercentageWidget
 import EnrollmentPercentageWidget from './components/EnrollmentPercentageWidget';
+// ADDED: Import the new BudgetVsForecastWidget
+import BudgetVsForecastWidget from './components/BudgetVsForecastWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 // --- WIDGET CATALOG & OID MAP ---
-// MODIFIED: Added kpi0 for the custom LTD Expensed widget and kpi5 for the new Enrollment Percentage widget
 const WIDGET_CATALOG = [
     { id: 'kpi0', title: 'LTD Expensed (Custom)', component: LTDExpensedWidget, defaultLayout: { w: 3, h: 3 } },
     { id: 'kpi1', title: 'LTD Reconciled', defaultLayout: { w: 3, h: 3 } },
     { id: 'kpi2', title: 'Trial budget', defaultLayout: { w: 3, h: 3 } },
     { id: 'kpi3', title: 'Remaining budget', defaultLayout: { w: 3, h: 3 } },
     { id: 'kpi4', title: '% Recognized', defaultLayout: { w: 3, h: 3 } },
-    { id: 'kpi5', title: 'Enrolled Patients % (Custom)', component: EnrollmentPercentageWidget, defaultLayout: { w: 3, h: 3 } }, // ADDED: New custom widget entry
-    { id: 'chart1', title: 'LTD trial spend', defaultLayout: { w: 6, h: 8 } }, { id: 'chart2', title: 'Actual + forecast', defaultLayout: { w: 6, h: 8 } }, { id: 'chart3', title: 'Cumulative total spend', defaultLayout: { w: 6, h: 8 } }, { id: 'chart4', title: 'Budget vs forecast by cost category', defaultLayout: { w: 6, h: 8 } }, { id: 'chart5', title: 'Vendor progress', defaultLayout: { w: 6, h: 8 } },
-    { id: 'table1', title: 'Financial Summary', defaultLayout: { w: 12, h: 8 } }, { id: 'chart6', title: 'Quarterly expenses', defaultLayout: { w: 12, h: 8 } },
+    { id: 'kpi5', title: 'Enrolled Patients % (Custom)', component: EnrollmentPercentageWidget, defaultLayout: { w: 3, h: 3 } },
+    { id: 'chart1', title: 'LTD trial spend', defaultLayout: { w: 6, h: 8 } },
+    { id: 'chart2', title: 'Actual + forecast', defaultLayout: { w: 6, h: 8 } },
+    { id: 'chart3', title: 'Cumulative total spend', defaultLayout: { w: 6, h: 8 } },
+    { id: 'chart4', title: 'Budget vs forecast by cost category', defaultLayout: { w: 6, h: 8 } }, // Keep the original chart4
+    { id: 'chart5', title: 'Vendor progress', defaultLayout: { w: 6, h: 8 } },
+    { id: 'table1', title: 'Financial Summary', defaultLayout: { w: 12, h: 8 } },
+    { id: 'chart6', title: 'Quarterly expenses', defaultLayout: { w: 12, h: 8 } },
+    // ADDED: New custom widget entry for Budget vs. Forecast
+    { id: 'chart7', title: 'Budget vs. Forecast (Custom)', component: BudgetVsForecastWidget, defaultLayout: { w: 6, h: 8 } },
 ];
+
 const WIDGET_OID_MAP: Record<string, { widgetOid: string, dashboardOid: string }> = {
-    'kpi1': { widgetOid: '684ae8c995906e3edc558213', dashboardOid: '684ae8c995906e3edc558210' }, 'kpi2': { widgetOid: '684ae8c995906e3edc558214', dashboardOid: '684ae8c995906e3edc558210' }, 'kpi3': { widgetOid: '684ae8c995906e3edc558219', dashboardOid: '684ae8c995906e3edc558210' }, 'kpi4': { widgetOid: '684ae8c995906e3edc558216', dashboardOid: '684ae8c995906e3edc558210' },
-    'chart1': { widgetOid: '684ae8c995906e3edc558211', dashboardOid: '684ae8c995906e3edc558210' }, 'chart2': { widgetOid: '684ae8c995906e3edc558212', dashboardOid: '684ae8c995906e3edc558210' }, 'chart3': { widgetOid: '684c1e2f95906e3edc558321', dashboardOid: '684ae8c995906e3edc558210' }, 'chart4': { widgetOid: '684ae8c995906e3edc558217', dashboardOid: '684ae8c995906e3edc558210' }, 'chart5': { widgetOid: '684c118b95906e3edc55830c', dashboardOid: '684ae8c995906e3edc558210' },
-    'table1': { widgetOid: '684ae8c995906e3edc55821a', dashboardOid: '684ae8c995906e3edc558210' }, 'chart6': { widgetOid: '6851e57ef8d1a53383881e98', dashboardOid: '684ae8c995906e3edc558210' },
+    'kpi1': { widgetOid: '684ae8c995906e3edc558213', dashboardOid: '684ae8c995906e3edc558210' },
+    'kpi2': { widgetOid: '684ae8c995906e3edc558214', dashboardOid: '684ae8c995906e3edc558210' },
+    'kpi3': { widgetOid: '684ae8c995906e3edc558219', dashboardOid: '684ae8c995906e3edc558210' },
+    'kpi4': { widgetOid: '684ae8c995906e3edc558216', dashboardOid: '684ae8c995906e3edc558210' },
+    'chart1': { widgetOid: '684ae8c995906e3edc558211', dashboardOid: '684ae8c995906e3edc558210' },
+    'chart2': { widgetOid: '684ae8c995906e3edc558212', dashboardOid: '684ae8c995906e3edc558210' },
+    'chart3': { widgetOid: '684c1e2f95906e3edc558321', dashboardOid: '684ae8c995906e3edc558210' },
+    'chart4': { widgetOid: '684ae8c995906e3edc558217', dashboardOid: '684ae8c995906e3edc558210' },
+    'chart5': { widgetOid: '684c118b95906e3edc55830c', dashboardOid: '684ae8c995906e3edc558210' },
+    'table1': { widgetOid: '684ae8c995906e3edc55821a', dashboardOid: '684ae8c995906e3edc558210' },
+    'chart6': { widgetOid: '6851e57ef8d1a53383881e98', dashboardOid: '684ae8c995906e3edc558210' },
+    // ADDED: OID for the new custom widget
+    'chart7': { widgetOid: '6865dfcbf8d1a5338388236e', dashboardOid: '684ae8c995906e3edc558210' },
 };
 
 // --- START OF NEW GENERIC TOOLTIP FORMATTERS ---
@@ -65,24 +83,7 @@ function genericSharedTooltipFormatter(this: any) {
     return `${header}<table>${rows}${finalTotalRow}</table>`;
 }
 
-/**
- * A tooltip formatter for pie charts to match the dashboard's table-based style.
- */
-function pieChartTooltipFormatter(this: any) {
-    const formatCurrency = (value: number) => '$' + new Intl.NumberFormat('en-US').format(Math.round(value));
-    const header = `<b>${this.point.name}</b>`;
-    
-    const row = `
-        <tr>
-            <td style="color: ${this.point.color}; font-size: 1.5em; vertical-align: middle;">\u25CF</td>
-            <td style="padding: 0 10px 0 5px;">${this.series.name}</td>
-            <td style="text-align: right;">${formatCurrency(this.y)}</td>
-        </tr>
-    `;
-
-    return `${header}<table>${row}</table>`;
-}
-
+// Removed unused pieChartTooltipFormatter
 
 // --- UNTOUCHED: CUSTOM TOOLTIP FORMATTER FOR CHART 1 & 2 ---
 function customTooltipFormatter(this: any) {
@@ -184,7 +185,7 @@ function customTooltipFormatter(this: any) {
                 <tr>
                     <td style="color: ${color}; font-size: 1.5em; vertical-align: middle; padding-top: 5px;">\u25AC</td>
                     <td style="padding: 5px 10px 0 5px; font-weight: bold;">${linePoint.series.name}</td>
-                    <td style="text-align: right; font-weight: bold; padding-top: 5px;">${linePoint.y ?? '\u2014'}</td>
+                    <td style="text-align: right; padding: 4px 2px; font-weight: bold;">${linePoint.y ?? '\u2014'}</td>
                 </tr>`;
         }
     }
@@ -279,7 +280,7 @@ const WidgetLibrary: React.FC<{ onAddWidget: (widgetConfig: any) => void }> = ({
 // --- MAIN APP COMPONENT ---
 const App: React.FC = () => {
     // MODIFIED: Added kpi0 for LTD Expensed and kpi5 for Enrolled Patients %
-    const initialWidgetIds = ['kpi0', 'kpi1', 'kpi2', 'kpi3', 'kpi4', 'kpi5', 'chart1', 'chart6']; 
+    const initialWidgetIds = ['kpi0', 'kpi1', 'kpi2', 'kpi3', 'kpi4', 'kpi5', 'chart1', 'chart6', 'chart7']; // ADDED chart7
 
     const [widgetInstances, setWidgetInstances] = useState(() => {
         const savedInstancesJSON = localStorage.getItem('dashboard-widgets');
@@ -458,24 +459,24 @@ const App: React.FC = () => {
     const ltdSpendOnBeforeRender = (options: any) => {
         // Apply legend reversal
         if (options.legend) {
-            options.legend.reversed = true; //
+            options.legend.reversed = true;
         }
 
         // Enable tick alignment
         options.chart = options.chart || {};
-        options.chart.alignTicks = true; //
+        options.chart.alignTicks = true;
 
         // Column Styling
         options.plotOptions = options.plotOptions || {};
         options.plotOptions.column = options.plotOptions.column || {};
-        options.plotOptions.column.borderRadius = 1; //
-        options.plotOptions.column.crisp = false; //
-        options.plotOptions.column.groupPadding = 0.4; //
+        options.plotOptions.column.borderRadius = 1;
+        options.plotOptions.column.crisp = false;
+        options.plotOptions.column.groupPadding = 0.4;
 
         // Y-Axis Alignment based on provided min values
         if (options.yAxis && options.yAxis.length > 1) {
-            options.yAxis[0].min = -400000; //
-            options.yAxis[1].min = -1; //
+            options.yAxis[0].min = -400000;
+            options.yAxis[1].min = -1;
         }
 
         const desiredOrder = ['Patient count', 'Direct Fees', 'Pass-throughs', 'Investigator fees', 'OCCs'];
@@ -549,10 +550,10 @@ const App: React.FC = () => {
             shared: true,
             useHTML: true,
             formatter: ltdSpendCustomTooltipFormatter, // Use the new specific formatter
-            backgroundColor: 'rgba(255, 255, 255, 1)', //
-            borderWidth: 1, //
-            borderColor: '#C0C0C0', //
-            shadow: true, //
+            backgroundColor: 'rgba(255, 255, 255, 1)',
+            borderWidth: 1,
+            borderColor: '#C0C0C0',
+            shadow: true,
         };
     
         return options;
@@ -564,24 +565,24 @@ const App: React.FC = () => {
     const actualForecastOnBeforeRender = (options: any) => {
         // Apply legend reversal
         if (options.legend) {
-            options.legend.reversed = true; //
+            options.legend.reversed = true;
         }
 
         // Enable tick alignment
         options.chart = options.chart || {};
-        options.chart.alignTicks = true; //
+        options.chart.alignTicks = true;
 
         // Column Styling
         options.plotOptions = options.plotOptions || {};
         options.plotOptions.column = options.plotOptions.column || {};
-        options.plotOptions.column.borderRadius = 1; //
-        options.plotOptions.column.crisp = false; //
-        options.plotOptions.column.groupPadding = 0.4; //
+        options.plotOptions.column.borderRadius = 1;
+        options.plotOptions.column.crisp = false;
+        options.plotOptions.column.groupPadding = 0.4;
 
         // Y-Axis Alignment based on provided min values
         if (options.yAxis && options.yAxis.length > 1) {
-            options.yAxis[0].min = -400000; //
-            options.yAxis[1].min = -1; //
+            options.yAxis[0].min = -400000;
+            options.yAxis[1].min = -1;
         }
 
         const desiredOrder = [
@@ -601,7 +602,7 @@ const App: React.FC = () => {
             });
         }
         
-        // Uses the original customTooltipFormatter (UNCHANGED)
+        // Uses the original customTooltipFormatter
         options.tooltip = {
             ...options.tooltip,
             shared: true,

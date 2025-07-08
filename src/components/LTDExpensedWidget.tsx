@@ -37,7 +37,8 @@ const LTDExpensedWidget: React.FC<LTDExpensedWidgetProps> = () => {
 
     // The cell from useExecuteQueryByWidgetId can be an object with a 'data' property
     expensedValue = mainValueCell && typeof mainValueCell.data === 'number' ? mainValueCell.data : 0;
-    percentage = percentageCell && typeof percentageCell.data === 'number' ? percentageCell.data : 0;
+    // Modified line: multiply percentageCell.data by 100
+    percentage = percentageCell && typeof percentageCell.data === 'number' ? percentageCell.data * 100 : 0;
 
   } else {
     console.warn("Data for LTD Expensed widget not in expected format or empty:", data);

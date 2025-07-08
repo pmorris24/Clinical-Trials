@@ -1,3 +1,4 @@
+// src/App.tsx
 import React, { useState, useCallback, useEffect } from 'react';
 import { Responsive, WidthProvider, type Layouts, type Layout } from 'react-grid-layout';
 import { DashboardWidget, SisenseContextProvider } from '@sisense/sdk-ui';
@@ -189,6 +190,75 @@ function customTooltipFormatter(this: any) {
     }
     
     return `${header}<table>${finalBarRows}${totalRow}${lineContent}</table>`;
+}
+
+/**
+ * Custom tooltip formatter for the "LTD trial spend" chart,
+ * adapted from the provided Sisense script.
+ */
+function ltdSpendCustomTooltipFormatter(this: any) {
+    const formatCurrency = (value: number) => '$' + new Intl.NumberFormat('en-US').format(Math.round(value));
+
+    let headerDate = this.x;
+    // Reformat date for LTD Spend chart
+    if (typeof headerDate === 'string' && /^\d{2}\/\d{4}$/.test(headerDate)) {
+        const [month, year] = headerDate.split('/');
+        const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
+        headerDate = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    let header = `<div style="font-size: 14px; margin-bottom: 10px;"><b>${headerDate}</b></div>`;
+    
+    let s = '<div style="padding: 5px 10px; min-width: 200px; font-family: sans-serif;">';
+    s += header;
+    s += '<table style="width: 100%;">';
+
+    let total = 0;
+    
+    // Sort order for LTD Trial Spend
+    const ltdSpendSortOrder = ['Direct Fees', 'Pass-throughs', 'Investigator fees', 'OCCs'];
+
+    // Filter out the line series (Patient count) and sort the column series points
+    const costPoints = this.points.filter((p: any) => p.series.type === 'column')
+        .sort((a: any, b: any) => {
+            return ltdSpendSortOrder.indexOf(a.series.name) - ltdSpendSortOrder.indexOf(b.series.name);
+        });
+
+    costPoints.forEach((point: any) => {
+        if (point.y !== 0) {
+            const value = point.y;
+            total += value;
+            const icon = `<span style="background-color: ${point.series.color}; width: 8px; height: 8px; display: inline-block; margin-right: 6px; vertical-align: middle;"></span>`;
+            s += `<tr>
+                    <td style="padding: 4px 2px;">${icon}${point.series.name}</td>
+                    <td style="text-align: right; padding: 4px 2px; font-weight: bold;">${formatCurrency(value)}</td>
+                  </tr>`;
+        }
+    });
+
+    // Add the Total Line
+    if (costPoints.length > 0) {
+        s += `<tr>
+                <td style="border-top: 1px solid #E0E0E0; padding-top: 8px; padding-bottom: 8px;"><b>Total</b></td>
+                <td style="border-top: 1px solid #E0E0E0; padding-top: 8px; padding-bottom: 8px; text-align: right;"><b>${formatCurrency(total)}</b></td>
+              </tr>`;
+    }
+
+    // Process Line Series (Patient count)
+    const linePoint = this.points.find((p: any) => p.series.type === 'line' && p.series.name === 'Patient count');
+
+    if (linePoint) {
+        const color = linePoint.series.color;
+        const icon = `<span style="color:${color}; font-weight: bold; font-size: 18px; vertical-align: middle; line-height: 10px;">—</span>`;
+        const value = (linePoint.y === null) ? '—' : new Intl.NumberFormat('en-US').format(Math.round(linePoint.y));
+        s += `<tr>
+                <td style="padding: 4px 2px;">${icon} Actual enrollment</td>
+                <td style="text-align: right; padding: 4px 2px; font-weight: bold;">${value}</td>
+              </tr>`;
+    }
+
+    s += '</table></div>';
+    return s;
 }
 
 
@@ -386,6 +456,28 @@ const App: React.FC = () => {
 
     // This function reorders the legend for the "LTD trial spend" chart AND aligns the Y-axes (No changes to sorting logic, only tooltip formatter calls it)
     const ltdSpendOnBeforeRender = (options: any) => {
+        // Apply legend reversal
+        if (options.legend) {
+            options.legend.reversed = true; //
+        }
+
+        // Enable tick alignment
+        options.chart = options.chart || {};
+        options.chart.alignTicks = true; //
+
+        // Column Styling
+        options.plotOptions = options.plotOptions || {};
+        options.plotOptions.column = options.plotOptions.column || {};
+        options.plotOptions.column.borderRadius = 1; //
+        options.plotOptions.column.crisp = false; //
+        options.plotOptions.column.groupPadding = 0.4; //
+
+        // Y-Axis Alignment based on provided min values
+        if (options.yAxis && options.yAxis.length > 1) {
+            options.yAxis[0].min = -400000; //
+            options.yAxis[1].min = -1; //
+        }
+
         const desiredOrder = ['Patient count', 'Direct Fees', 'Pass-throughs', 'Investigator fees', 'OCCs'];
     
         if (!options.series) {
@@ -456,16 +548,42 @@ const App: React.FC = () => {
             ...options.tooltip,
             shared: true,
             useHTML: true,
-            formatter: customTooltipFormatter,
+            formatter: ltdSpendCustomTooltipFormatter, // Use the new specific formatter
+            backgroundColor: 'rgba(255, 255, 255, 1)', //
+            borderWidth: 1, //
+            borderColor: '#C0C0C0', //
+            shadow: true, //
         };
     
         return options;
     };
 
 
-    // This function uses the CORRECT series names for ordering. (UNCHANGED)
+    // This function uses the CORRECT series names for ordering.
     // Reordered actualForecastSortOrder to start with 'Direct fees'
     const actualForecastOnBeforeRender = (options: any) => {
+        // Apply legend reversal
+        if (options.legend) {
+            options.legend.reversed = true; //
+        }
+
+        // Enable tick alignment
+        options.chart = options.chart || {};
+        options.chart.alignTicks = true; //
+
+        // Column Styling
+        options.plotOptions = options.plotOptions || {};
+        options.plotOptions.column = options.plotOptions.column || {};
+        options.plotOptions.column.borderRadius = 1; //
+        options.plotOptions.column.crisp = false; //
+        options.plotOptions.column.groupPadding = 0.4; //
+
+        // Y-Axis Alignment based on provided min values
+        if (options.yAxis && options.yAxis.length > 1) {
+            options.yAxis[0].min = -400000; //
+            options.yAxis[1].min = -1; //
+        }
+
         const desiredOrder = [
             'Enrollment', 'Direct fees - A', 'Pass-throughs - A', 'Investigator - A', 'OCC - A', 
             'Direct fees - F', 'Pass-throughs - F', 'Investigator - F', 'OCC - F'
@@ -515,8 +633,6 @@ const App: React.FC = () => {
 
         return options;
     };
-    
-    // --- MODIFIED onBeforeRender FUNCTIONS ---
     
     /**
      * Applies the generic shared tooltip formatter to a column/bar chart.

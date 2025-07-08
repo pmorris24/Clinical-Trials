@@ -5,7 +5,6 @@ import { DashboardWidget, SisenseContextProvider } from '@sisense/sdk-ui';
 
 import LTDExpensedWidget from './components/LTDExpensedWidget';
 import EnrollmentPercentageWidget from './components/EnrollmentPercentageWidget';
-// ADDED: Import the new BudgetVsForecastWidget
 import BudgetVsForecastWidget from './components/BudgetVsForecastWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -21,11 +20,10 @@ const WIDGET_CATALOG = [
     { id: 'chart1', title: 'LTD trial spend', defaultLayout: { w: 6, h: 8 } },
     { id: 'chart2', title: 'Actual + forecast', defaultLayout: { w: 6, h: 8 } },
     { id: 'chart3', title: 'Cumulative total spend', defaultLayout: { w: 6, h: 8 } },
-    { id: 'chart4', title: 'Budget vs forecast by cost category', defaultLayout: { w: 6, h: 8 } }, // Keep the original chart4
+    { id: 'chart4', title: 'Budget vs forecast by cost category', defaultLayout: { w: 6, h: 8 } },
     { id: 'chart5', title: 'Vendor progress', defaultLayout: { w: 6, h: 8 } },
     { id: 'table1', title: 'Financial Summary', defaultLayout: { w: 12, h: 8 } },
     { id: 'chart6', title: 'Quarterly expenses', defaultLayout: { w: 12, h: 8 } },
-    // ADDED: New custom widget entry for Budget vs. Forecast
     { id: 'chart7', title: 'Budget vs. Forecast (Custom)', component: BudgetVsForecastWidget, defaultLayout: { w: 6, h: 8 } },
 ];
 
@@ -41,16 +39,11 @@ const WIDGET_OID_MAP: Record<string, { widgetOid: string, dashboardOid: string }
     'chart5': { widgetOid: '684c118b95906e3edc55830c', dashboardOid: '684ae8c995906e3edc558210' },
     'table1': { widgetOid: '684ae8c995906e3edc55821a', dashboardOid: '684ae8c995906e3edc558210' },
     'chart6': { widgetOid: '6851e57ef8d1a53383881e98', dashboardOid: '684ae8c995906e3edc558210' },
-    // ADDED: OID for the new custom widget
     'chart7': { widgetOid: '6865dfcbf8d1a5338388236e', dashboardOid: '684ae8c995906e3edc558210' },
 };
 
-// --- START OF NEW GENERIC TOOLTIP FORMATTERS ---
+// --- TOOLTIP FORMATTERS ---
 
-/**
- * A generic tooltip formatter for shared tooltips on bar/column charts.
- * It shows each series value and a total, formatted as currency.
- */
 function genericSharedTooltipFormatter(this: any) {
     const formatCurrency = (value: number) => '$' + new Intl.NumberFormat('en-US').format(Math.round(value));
     const header = `<b>${this.x}</b>`;
@@ -77,25 +70,18 @@ function genericSharedTooltipFormatter(this: any) {
             <td style="text-align: right; padding-top: 5px;">${formatCurrency(total)}</td>
         </tr>`;
 
-    // Only show the total row if there are multiple series in the tooltip
     const finalTotalRow = this.points.length > 1 ? totalRow : '';
 
     return `${header}<table>${rows}${finalTotalRow}</table>`;
 }
 
-// Removed unused pieChartTooltipFormatter
-
-// --- UNTOUCHED: CUSTOM TOOLTIP FORMATTER FOR CHART 1 & 2 ---
 function customTooltipFormatter(this: any) {
     const formatCurrency = (value: number) => '$' + new Intl.NumberFormat('en-US').format(Math.round(value));
-
-    // Determine the chart type and if the point is in a forecast period
     const isActualForecastChart = this.points.some((p: any) => p.series.name.includes(' - A') || p.series.name.includes(' - F'));
     const isForecast = isActualForecastChart && this.points.some((p: any) => p.series.name.includes('- F'));
     
     let headerDate = this.x;
     
-    // Reformat date for LTD Spend chart
     if (!isActualForecastChart && typeof headerDate === 'string' && /^\d{2}\/\d{4}$/.test(headerDate)) {
         const [month, year] = headerDate.split('/');
         const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
@@ -108,14 +94,10 @@ function customTooltipFormatter(this: any) {
     }
     header += `</b>`;
 
-    // Define the sorting order for the data points before they are reversed to match the visual stack.
     const ltdSpendSortOrder = ['Direct Fees', 'Pass-throughs', 'Investigator fees', 'OCCs'];
-    // Reordered actualForecastSortOrder to start with 'Direct fees'
     const actualForecastSortOrder = ['Direct fees', 'Pass-throughs', 'Investigator', 'OCC']; 
-    
     const sortOrder = isActualForecastChart ? actualForecastSortOrder : ltdSpendSortOrder;
 
-    // Filter out the line series and sort the bar series points
     const barPoints = this.points.filter((p: any) => !p.series.name.toLowerCase().includes('count') && !p.series.name.toLowerCase().includes('enrollment'));
     const sortedBarPoints = barPoints.sort((a: any, b: any) => {
         const cleanNameA = a.series.name.replace(/ - [AF]$/, '');
@@ -126,7 +108,6 @@ function customTooltipFormatter(this: any) {
     let total = 0;
     const barRows: string[] = [];
 
-    // Process the sorted bar chart data points
     sortedBarPoints.forEach((point: any) => {
         const value = point.y;
         if (value !== null && value !== 0) {
@@ -141,8 +122,7 @@ function customTooltipFormatter(this: any) {
         }
     });
 
-    const finalBarRows = barRows.join(''); // Removed .reverse() here
-
+    const finalBarRows = barRows.join('');
     const totalRow = `
         <tr style="border-top: 1px solid #ccc; font-weight: bold;">
             <td></td>
@@ -150,7 +130,6 @@ function customTooltipFormatter(this: any) {
             <td style="text-align: right; padding-top: 5px;">${formatCurrency(total)}</td>
         </tr>`;
 
-    // Handle the line series (Enrollment / Patient Count) separately
     let lineContent = '';
     const linePoint = this.points.find((p: any) => p.series.name.toLowerCase().includes('count') || p.series.name.toLowerCase().includes('enrollment'));
 
@@ -193,15 +172,10 @@ function customTooltipFormatter(this: any) {
     return `${header}<table>${finalBarRows}${totalRow}${lineContent}</table>`;
 }
 
-/**
- * Custom tooltip formatter for the "LTD trial spend" chart,
- * adapted from the provided Sisense script.
- */
 function ltdSpendCustomTooltipFormatter(this: any) {
     const formatCurrency = (value: number) => '$' + new Intl.NumberFormat('en-US').format(Math.round(value));
 
     let headerDate = this.x;
-    // Reformat date for LTD Spend chart
     if (typeof headerDate === 'string' && /^\d{2}\/\d{4}$/.test(headerDate)) {
         const [month, year] = headerDate.split('/');
         const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
@@ -216,10 +190,7 @@ function ltdSpendCustomTooltipFormatter(this: any) {
 
     let total = 0;
     
-    // Sort order for LTD Trial Spend
     const ltdSpendSortOrder = ['Direct Fees', 'Pass-throughs', 'Investigator fees', 'OCCs'];
-
-    // Filter out the line series (Patient count) and sort the column series points
     const costPoints = this.points.filter((p: any) => p.series.type === 'column')
         .sort((a: any, b: any) => {
             return ltdSpendSortOrder.indexOf(a.series.name) - ltdSpendSortOrder.indexOf(b.series.name);
@@ -237,7 +208,6 @@ function ltdSpendCustomTooltipFormatter(this: any) {
         }
     });
 
-    // Add the Total Line
     if (costPoints.length > 0) {
         s += `<tr>
                 <td style="border-top: 1px solid #E0E0E0; padding-top: 8px; padding-bottom: 8px;"><b>Total</b></td>
@@ -245,7 +215,6 @@ function ltdSpendCustomTooltipFormatter(this: any) {
               </tr>`;
     }
 
-    // Process Line Series (Patient count)
     const linePoint = this.points.find((p: any) => p.series.type === 'line' && p.series.name === 'Patient count');
 
     if (linePoint) {
@@ -262,10 +231,8 @@ function ltdSpendCustomTooltipFormatter(this: any) {
     return s;
 }
 
-
-// --- MODAL & LIBRARY COMPONENTS ---
+// --- UI COMPONENTS ---
 const Modal: React.FC<{ onClose: () => void; children: React.ReactNode; title: string }> = ({ onClose, children, title }) => ( <div className="modal-overlay" onClick={onClose}><div className="modal-content" onClick={(e) => e.stopPropagation()}><div className="modal-header"><h2>{title}</h2><button className="modal-close-button" onClick={onClose}>&times;</button></div><div className="modal-body">{children}</div></div></div> );
-// MODIFIED: WidgetLibrary to handle custom components
 const WidgetLibrary: React.FC<{ onAddWidget: (widgetConfig: any) => void }> = ({ onAddWidget }) => (
   <div className="widget-library">
     {WIDGET_CATALOG.map(widget => (
@@ -279,48 +246,33 @@ const WidgetLibrary: React.FC<{ onAddWidget: (widgetConfig: any) => void }> = ({
 
 // --- MAIN APP COMPONENT ---
 const App: React.FC = () => {
-    // MODIFIED: Added kpi0 for LTD Expensed and kpi5 for Enrolled Patients %
-    const initialWidgetIds = ['kpi0', 'kpi1', 'kpi2', 'kpi3', 'kpi4', 'kpi5', 'chart1', 'chart6', 'chart7']; // ADDED chart7
+    const initialWidgetIds = ['kpi0', 'kpi1', 'kpi2', 'kpi3', 'kpi4', 'kpi5', 'chart1', 'chart6', 'chart7'];
 
     const [widgetInstances, setWidgetInstances] = useState(() => {
         const savedInstancesJSON = localStorage.getItem('dashboard-widgets');
         if (savedInstancesJSON) {
             try {
                 const savedInstances = JSON.parse(savedInstancesJSON);
-                
-                // --- FIX START: Validate data from localStorage to prevent crash ---
                 if (Array.isArray(savedInstances)) {
-                    const validatedInstances = savedInstances.filter(inst => 
-                        inst && typeof inst === 'object' && inst.layout && typeof inst.layout === 'object'
-                    );
-
+                    const validatedInstances = savedInstances.filter(inst => inst && typeof inst === 'object' && inst.layout && typeof inst.layout === 'object');
                     if (validatedInstances.length > 0) {
                         return validatedInstances;
                     }
                 }
-                // --- FIX END ---
-
             } catch (e) {
-                console.error("Failed to parse or validate widget instances from localStorage", e);
+                console.error("Failed to parse widget instances from localStorage", e);
             }
         }
-        // Fallback to initial widgets if localStorage is empty or invalid
         return initialWidgetIds
             .map((id, i) => {
                 const widgetConfig = WIDGET_CATALOG.find(w => w.id === id);
                 if (!widgetConfig) return null;
-
                 const defaultLayout = widgetConfig.defaultLayout || { w: 3, h: 3 };
                 const x = (i % 4) * 3;
                 const y = Math.floor(i / 4) * 3;
-                
-                return {
-                    instanceId: `${id}-${i}`,
-                    id: id,
-                    layout: { i: `${id}-${i}`, x, y, ...defaultLayout }
-                };
+                return { instanceId: `${id}-${i}`, id: id, layout: { i: `${id}-${i}`, x, y, ...defaultLayout } };
             })
-            .filter(Boolean);
+            .filter(Boolean as any);
     });
 
     useEffect(() => {
@@ -332,17 +284,12 @@ const App: React.FC = () => {
         return { ...catalogEntry, ...inst };
     });
 
-    const layouts = {
-        lg: widgetInstances.map(inst => inst.layout)
-    };
+    const layouts = { lg: widgetInstances.map(inst => inst.layout) };
     
     const [isLibraryOpen, setLibraryOpen] = useState(false);
     const [isEditable, setIsEditable] = useState(false);
-    const [contextMenu, setContextMenu] = useState({
-        visible: false,
-        x: 0,
-        y: 0,
-        widgetId: null as string | null,
+    const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; widgetId: string | null; }>({
+        visible: false, x: 0, y: 0, widgetId: null,
     });
 
     const onLayoutChange = useCallback((newLayout: Layout[], _allLayouts: Layouts) => {
@@ -351,7 +298,6 @@ const App: React.FC = () => {
                 const layoutItem = newLayout.find(l => l.i === instance.instanceId);
                 return layoutItem ? { ...instance, layout: layoutItem } : instance;
             });
-            // This simple check prevents re-renders if the layout object is new but values are identical
             if (JSON.stringify(newInstances) !== JSON.stringify(prevInstances)) {
                 return newInstances;
             }
@@ -361,18 +307,9 @@ const App: React.FC = () => {
 
     const onResizeStop = useCallback((_layout: Layout[], _oldItem: Layout, newItem: Layout) => {
         setWidgetInstances(prevInstances => {
-            return prevInstances.map(instance => {
-                if (instance.instanceId === newItem.i) {
-                    return { ...instance, layout: newItem };
-                }
-                return instance;
-            });
+            return prevInstances.map(instance => (instance.instanceId === newItem.i) ? { ...instance, layout: newItem } : instance);
         });
-
-        // A short delay to allow the grid layout to finalize its dimensions, then trigger a global resize event
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-        }, 150);
+        setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 150);
     }, []);
 
     const addWidget = (widgetConfig: any) => {
@@ -380,12 +317,7 @@ const App: React.FC = () => {
         const newWidgetInstance = {
             instanceId: instanceId,
             id: widgetConfig.id,
-            layout: {
-                i: instanceId,
-                x: (widgets.length * 3) % 12,
-                y: Infinity, // This will cause the grid to place it at the bottom
-                ...widgetConfig.defaultLayout
-            }
+            layout: { i: instanceId, x: (widgets.length * 3) % 12, y: Infinity, ...widgetConfig.defaultLayout }
         };
         setWidgetInstances(prev => [...prev, newWidgetInstance]);
         setLibraryOpen(false);
@@ -398,13 +330,7 @@ const App: React.FC = () => {
     const handleContextMenu = (event: React.MouseEvent, widgetId: string) => {
         event.preventDefault();
         if (!isEditable) return;
-
-        setContextMenu({
-            visible: true,
-            x: event.clientX,
-            y: event.clientY,
-            widgetId,
-        });
+        setContextMenu({ visible: true, x: event.clientX, y: event.clientY, widgetId });
     };
 
     const closeContextMenu = useCallback(() => {
@@ -422,19 +348,17 @@ const App: React.FC = () => {
         };
     }, [contextMenu.visible, closeContextMenu]);
 
-    // Style options for the KPIs (No changes)
-
-    // This function now also adds the generic tooltip
+    // --- onBeforeRender HOOKS FOR STANDARD WIDGETS ---
+    
     const cumulativeSpendOnBeforeRender = (options: any) => {
         const budgetSeries = options.series?.find((s: any) => s.name === 'Total budget');
         const budgetDataPoint = budgetSeries?.data?.find((point: any) => point && typeof point.y === 'number');
         const budgetValue = budgetDataPoint?.y;
 
         if (typeof budgetValue === 'number') {
-            if (!options.yAxis) options.yAxis = [{}];
-            if (!options.yAxis[0]) options.yAxis[0] = {};
-            if (!options.yAxis[0].plotLines) options.yAxis[0].plotLines = [];
-
+            options.yAxis = options.yAxis || [{}];
+            options.yAxis[0] = options.yAxis[0] || {};
+            options.yAxis[0].plotLines = options.yAxis[0].plotLines || [];
             options.yAxis[0].plotLines.push({
                 color: '#F39C12',
                 width: 2,
@@ -444,64 +368,36 @@ const App: React.FC = () => {
             });
         }
         
-        // Add generic tooltip
-        options.tooltip = {
-            ...options.tooltip,
-            shared: true,
-            useHTML: true,
-            formatter: genericSharedTooltipFormatter,
-        };
-
+        options.tooltip = { ...options.tooltip, shared: true, useHTML: true, formatter: genericSharedTooltipFormatter };
         return options;
     };
 
-    // This function reorders the legend for the "LTD trial spend" chart AND aligns the Y-axes (No changes to sorting logic, only tooltip formatter calls it)
+    // ★★★ FIX IS HERE ★★★
     const ltdSpendOnBeforeRender = (options: any) => {
-        // Apply legend reversal
-        if (options.legend) {
-            options.legend.reversed = true;
-        }
-
-        // Enable tick alignment
         options.chart = options.chart || {};
         options.chart.alignTicks = true;
-
-        // Column Styling
-        options.plotOptions = options.plotOptions || {};
-        options.plotOptions.column = options.plotOptions.column || {};
-        options.plotOptions.column.borderRadius = 1;
-        options.plotOptions.column.crisp = false;
-        options.plotOptions.column.groupPadding = 0.4;
-
-        // Y-Axis Alignment based on provided min values
+        
+        options.plotOptions = { ...options.plotOptions, column: { ...options.plotOptions?.column, borderRadius: 1, crisp: false, groupPadding: 0.4 } };
+        
         if (options.yAxis && options.yAxis.length > 1) {
             options.yAxis[0].min = -400000;
             options.yAxis[1].min = -1;
         }
 
         const desiredOrder = ['Patient count', 'Direct Fees', 'Pass-throughs', 'Investigator fees', 'OCCs'];
-    
-        if (!options.series) {
-            return options;
-        }
-    
-        // --- Part 1: Legend and Z-Index ---
+        if (!options.series) return options;
+
         options.series.forEach((s: any) => {
             const orderIndex = desiredOrder.indexOf(s.name);
             s.legendIndex = orderIndex !== -1 ? orderIndex : desiredOrder.length;
-    
-            if (s.name === 'Patient count') {
-                s.zIndex = 5;
-            }
+            if (s.name === 'Patient count') s.zIndex = 5;
         });
-    
-        // --- Part 2: Axis Alignment Logic ---
     
         const secondarySeries = options.series.find((s: any) => s.name === 'Patient count');
         let secondaryAxisMax = 0;
         if (secondarySeries?.data?.length) {
             const dataPoints = secondarySeries.data.map((p: any) => (typeof p === 'object' && p !== null ? p.y : p));
-            secondaryAxisMax = Math.max(0, ...dataPoints.filter((p: number | null): p is number => typeof p === 'number'));
+            secondaryAxisMax = Math.max(0, ...dataPoints.filter((v: any): v is number => typeof v === 'number'));
         }
     
         const primaryAxisSeries = options.series.filter((s: any) => s.name !== 'Patient count');
@@ -526,30 +422,27 @@ const App: React.FC = () => {
             if (negativeSum < primaryAxisMin) primaryAxisMin = negativeSum;
         });
     
-        if (!options.yAxis) options.yAxis = [{}, {}];
-        if (!options.yAxis[0]) options.yAxis[0] = {};
-        if (!options.yAxis[1]) options.yAxis[1] = {};
+        options.yAxis = options.yAxis || [{}, {}];
+        options.yAxis[0] = options.yAxis[0] || {};
+        options.yAxis[1] = options.yAxis[1] || {};
     
         if (primaryAxisMin < 0 && primaryAxisMax > 0 && secondaryAxisMax > 0) {
             const newSecondaryMin = primaryAxisMin * (secondaryAxisMax / primaryAxisMax);
-    
             options.yAxis[0].min = primaryAxisMin;
             options.yAxis[0].max = primaryAxisMax;
             options.yAxis[1].min = newSecondaryMin;
             options.yAxis[1].max = secondaryAxisMax;
-    
             options.yAxis[0].startOnTick = false;
             options.yAxis[0].endOnTick = false;
             options.yAxis[1].startOnTick = false;
             options.yAxis[1].endOnTick = false;
         }
 
-        // --- Part 3: Custom Tooltip (UNCHANGED) ---
         options.tooltip = {
             ...options.tooltip,
             shared: true,
             useHTML: true,
-            formatter: ltdSpendCustomTooltipFormatter, // Use the new specific formatter
+            formatter: ltdSpendCustomTooltipFormatter,
             backgroundColor: 'rgba(255, 255, 255, 1)',
             borderWidth: 1,
             borderColor: '#C0C0C0',
@@ -559,27 +452,13 @@ const App: React.FC = () => {
         return options;
     };
 
-
-    // This function uses the CORRECT series names for ordering.
-    // Reordered actualForecastSortOrder to start with 'Direct fees'
+    // ★★★ FIX IS HERE ★★★
     const actualForecastOnBeforeRender = (options: any) => {
-        // Apply legend reversal
-        if (options.legend) {
-            options.legend.reversed = true;
-        }
-
-        // Enable tick alignment
         options.chart = options.chart || {};
         options.chart.alignTicks = true;
 
-        // Column Styling
-        options.plotOptions = options.plotOptions || {};
-        options.plotOptions.column = options.plotOptions.column || {};
-        options.plotOptions.column.borderRadius = 1;
-        options.plotOptions.column.crisp = false;
-        options.plotOptions.column.groupPadding = 0.4;
-
-        // Y-Axis Alignment based on provided min values
+        options.plotOptions = { ...options.plotOptions, column: { ...options.plotOptions?.column, borderRadius: 1, crisp: false, groupPadding: 0.4 } };
+        
         if (options.yAxis && options.yAxis.length > 1) {
             options.yAxis[0].min = -400000;
             options.yAxis[1].min = -1;
@@ -594,7 +473,6 @@ const App: React.FC = () => {
             options.series.forEach((s: any) => {
                 const orderIndex = desiredOrder.indexOf(s.name);
                 s.legendIndex = orderIndex !== -1 ? orderIndex : desiredOrder.length;
-
                 if (s.name === 'Enrollment') {
                     s.type = 'line';
                     s.zIndex = 5;
@@ -602,67 +480,32 @@ const App: React.FC = () => {
             });
         }
         
-        // Uses the original customTooltipFormatter
-        options.tooltip = {
-            ...options.tooltip,
-            shared: true,
-            useHTML: true,
-            formatter: customTooltipFormatter,
-        };
-
+        options.tooltip = { ...options.tooltip, shared: true, useHTML: true, formatter: customTooltipFormatter };
         return options;
     };
 
-    // This function now also adds the generic tooltip
     const vendorProgressOnBeforeRender = (options: any) => {
         const desiredOrder = ['LTD reconciled', 'Remaining Budget'];
-        
         if (options.series) {
             options.series.forEach((s: any) => {
                 const orderIndex = desiredOrder.indexOf(s.name);
                 s.legendIndex = orderIndex !== -1 ? orderIndex : desiredOrder.length;
             });
         }
-
-        // Add generic tooltip
-        options.tooltip = {
-            ...options.tooltip,
-            shared: true,
-            useHTML: true,
-            formatter: genericSharedTooltipFormatter,
-        };
-
+        options.tooltip = { ...options.tooltip, shared: true, useHTML: true, formatter: genericSharedTooltipFormatter };
         return options;
     };
     
-    /**
-     * Applies the generic shared tooltip formatter to a column/bar chart.
-     */
     const budgetChartOnBeforeRender = (options: any) => {
-        options.tooltip = {
-            ...options.tooltip,
-            shared: true,
-            useHTML: true,
-            formatter: genericSharedTooltipFormatter,
-        };
+        options.tooltip = { ...options.tooltip, shared: true, useHTML: true, formatter: genericSharedTooltipFormatter };
         return options;
     };
 
-    /**
-     * Applies the generic shared tooltip formatter.
-     */
     const quarterlyExpensesOnBeforeRender = (options: any) => {
-        options.tooltip = {
-            ...options.tooltip,
-            shared: true,
-            useHTML: true,
-            formatter: genericSharedTooltipFormatter,
-        };
+        options.tooltip = { ...options.tooltip, shared: true, useHTML: true, formatter: genericSharedTooltipFormatter };
         return options;
     };
 
-
-    // Get Sisense URL and token from environment variables
     const sisenseUrl = import.meta.env.VITE_SISENSE_URL;
     const sisenseToken = import.meta.env.VITE_SISENSE_TOKEN;
 
@@ -677,7 +520,6 @@ const App: React.FC = () => {
     }
 
     return (
-        // SisenseContextProvider wrapping the entire application
         <SisenseContextProvider url={sisenseUrl} token={sisenseToken}>
             <div className="app-container">
                 <header className="app-header">
@@ -745,7 +587,7 @@ const App: React.FC = () => {
                     <div
                         className="context-menu"
                         style={{ top: contextMenu.y, left: contextMenu.x }}
-                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the menu itself
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <button
                             onClick={() => {

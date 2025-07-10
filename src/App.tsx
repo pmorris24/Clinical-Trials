@@ -524,7 +524,7 @@ const App: React.FC = () => {
             <div className="app-container">
                 <header className="app-header">
                     <div className="header-branding">
-                        <img src="/Condor logo.png" alt="Condor Logo" className="header-logo" />
+                        <img src="/Sisense logo.png" alt="Sisense Logo" className="header-logo" />
                     </div>
                     <div className="header-actions">
                         <button className={`edit-mode-button ${isEditable ? 'editing' : ''}`} onClick={() => setIsEditable(prev => !prev)}>
